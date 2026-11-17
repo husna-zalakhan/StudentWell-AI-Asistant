@@ -1,6 +1,7 @@
 
 import bcrypt
-import mysql.connector
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from database import get_connection
 
 
@@ -30,8 +31,12 @@ def register_student(full_name, email, password):
     cursor = None
 
     try:
-        # 3. Connect to MySQL
+        # 3. Connect to PostgreSQL
         conn = get_connection()
+
+        if conn is None:
+            return False, "Database connection failed."
+
         cursor = conn.cursor()
 
         # 4. Save student information
@@ -49,10 +54,16 @@ def register_student(full_name, email, password):
 
         return True, "Registration successful!"
 
-    except mysql.connector.IntegrityError:
+    except psycopg2.errors.UniqueViolation:
+        if conn:
+            conn.rollback()
+
         return False, "This email is already registered."
 
-    except mysql.connector.Error as error:
+    except psycopg2.Error as error:
+        if conn:
+            conn.rollback()
+
         print("Database error:", error)
         return False, "Registration failed. Please try again."
 
@@ -80,9 +91,15 @@ def login_student(email, password):
     cursor = None
 
     try:
-        # 2. Connect to MySQL
+        # 2. Connect to PostgreSQL
         conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
+
+        if conn is None:
+            return False, "Database connection failed.", None
+
+        cursor = conn.cursor(
+            cursor_factory=RealDictCursor
+        )
 
         # 3. Find student using email
         query = """
@@ -101,15 +118,18 @@ def login_student(email, password):
         # 5. Verify password
         stored_hash = student["password_hash"].encode("utf-8")
 
-        if bcrypt.checkpw(password.encode("utf-8"), stored_hash):
+        if bcrypt.checkpw(
+            password.encode("utf-8"),
+            stored_hash
+        ):
 
             student.pop("password_hash")
 
-            return True, "Login successful!", student
+            return True, "Login successful!", dict(student)
 
         return False, "Invalid email or password.", None
 
-    except mysql.connector.Error as error:
+    except psycopg2.Error as error:
         print("Login database error:", error)
         return False, "Login failed. Please try again.", None
 

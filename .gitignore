@@ -1,7 +1,7 @@
-
 # Secret files
 .env
 .env.*
+.streamlit/secrets.toml
 
 # Python virtual environment
 venv/
@@ -14,11 +14,14 @@ __pycache__/
 # System files
 .DS_Store
 
+# VS Code
 .vscode/
 tempCodeRunnerFile.py
 
 # Testing scripts
 test_*.py
 check_gemini.py
-
 inspect_chat_tables.py
+
+check_users.py
+create_tables.py

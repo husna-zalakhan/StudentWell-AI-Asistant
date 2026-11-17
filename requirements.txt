@@ -6,4 +6,5 @@ seaborn
 google-genai
 python-dotenv
 scikit-learn
-mysql-connector-python
+psycopg2-binary
+bcrypt
